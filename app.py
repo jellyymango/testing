@@ -15,12 +15,12 @@ full_features = joblib.load('full_features.pkl')
 accessible_features = joblib.load('accessible_features.pkl')
 
 # page layout
-st.set_page_config(page_title='Diabetes Risk Screening', layout='wide')
+st.set_page_config(page_title='Diabetes Risk Screening', layout='centered')
 st.title('Diabetes Risk Screening Tool')
 st.markdown('*Educational tool only - not a medical diagnosis.*')
 
 # user selection: full features or accessible features
-mode = st.radio('Assessment Type:', ['Quick Screening (self-reported only)', 'Full Assessment (includes lab values)'])
+mode = st.radio('Assessment Type:', ['Self Assessment', 'Clinical Assessment'])
 
 # user submission form
 with st.form('risk_form'):
@@ -49,7 +49,7 @@ with st.form('risk_form'):
         weight_loss = st.selectbox('Unexplained Weight Loss', ['No', 'Yes'])
 
     # enabling full feature entry
-    if mode == 'Full Assessment (includes lab values)':
+    if mode == 'Clinical Assessment':
         st.subheader('Lab Values')
         col5, col6 = st.columns(2)
         with col5:
@@ -93,11 +93,11 @@ if submitted:
     }
 
     # if accessible, use logreg model
-    if mode == 'Quick Screening (self-reported only)':
+    if mode == 'Self Assessment':
         input_df = pd.DataFrame([user_data])[accessible_features]
         input_scaled = scaler_accessible.transform(input_df)
         proba = log_reg_accessible.predict_proba(input_scaled)[0, 1]
-        confidence_note = 'Based on self-assessment only (lower accuracy).'
+        confidence_note = 'Based on widely accessible metrics only (lower accuracy).'
     else:
         # add all other features and fill with medians if necessary
         user_data.update({
@@ -123,19 +123,19 @@ if submitted:
         # use xgboost model
         input_df = pd.DataFrame([user_data])[full_features]
         input_scaled = scaler_full.transform(input_df)
-        proba = xgboost_full.predict_proba(input_scaled)[0, 1]
-        confidence_note = 'Based on full clinical assessment (higher accuracy).'
+        prob = xgboost_full.predict_proba(input_scaled)[0, 1]
+        confidence_note = 'Based on a full clinical assessment (higher accuracy).'
 
     # display results
     st.markdown('---')
     st.subheader('Your Results')
 
-    if proba < 0.33:
-        st.success(f'**Low Risk** - {proba * 100:.2f}%')
-    elif proba < 0.66:
-        st.warning(f'**Moderate Risk** - {proba * 100:.2f}%')
+    if prob < 0.33:
+        st.success(f'**Low Risk** - {prob * 100:.2f}%')
+    elif prob < 0.66:
+        st.warning(f'**Moderate Risk** - {prob * 100:.2f}%')
     else:
-        st.error(f'**High Risk** - {proba * 100:.2f}%')
+        st.error(f'**High Risk** - {prob * 100:.2f}%')
 
-    st.progress(float(proba))
+    st.progress(float(prob))
     st.caption(confidence_note)
