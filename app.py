@@ -15,6 +15,12 @@ st.set_page_config(page_title='Diabetes Risk Screening', layout='wide')
 st.title('Diabetes Risk Screening Tool')
 st.markdown('*Educational tool only - not a medical diagnosis.*')
 
+# Initialize session state for numpad values (MUST be before any numpad call)
+if 'age_value' not in st.session_state:
+    st.session_state.age_value = '45'
+if 'bmi_value' not in st.session_state:
+    st.session_state.bmi_value = '25.0'
+
 # Assessment mode selection
 mode = st.radio(
     'Assessment Type:',
@@ -23,7 +29,6 @@ mode = st.radio(
 
 def append_digit(field, digit):
     current = st.session_state[field]
-    # Replace default placeholder on first click
     if field == 'age_value' and current == '45':
         st.session_state[field] = digit
     elif field == 'bmi_value' and current == '25.0':
@@ -41,7 +46,6 @@ def numpad(field_name, label):
     st.markdown(f"**{label}**")
     st.text(f"Current value: {st.session_state[field_name] or '(empty)'}")
     
-    # Digit buttons arranged in a 3x3 grid + bottom row
     row1 = st.columns(3)
     row2 = st.columns(3)
     row3 = st.columns(3)
@@ -59,7 +63,6 @@ def numpad(field_name, label):
                        on_click=append_digit, args=(field_name, digit),
                        use_container_width=True)
     
-    # Bottom row: decimal (BMI only), 0, backspace
     if field_name == 'bmi_value':
         row4[0].button('.', key=f'{field_name}_dot',
                        on_click=append_digit, args=(field_name, '.'),
@@ -76,26 +79,31 @@ def numpad(field_name, label):
                    on_click=backspace_field, args=(field_name,),
                    use_container_width=True)
 
-# Input form
+# Numpads OUTSIDE the form (buttons can't live inside st.form)
+st.subheader('Demographics & Lifestyle')
+numpad_col1, numpad_col2 = st.columns(2)
+with numpad_col1:
+    numpad('age_value', 'Age')
+    try:
+        age = int(st.session_state.age_value) if st.session_state.age_value else 45
+    except ValueError:
+        age = 45
+with numpad_col2:
+    numpad('bmi_value', 'BMI')
+    try:
+        bmi = float(st.session_state.bmi_value) if st.session_state.bmi_value else 25.0
+    except ValueError:
+        bmi = 25.0
+
+# Everything else stays INSIDE the form
 with st.form('risk_form'):
-    st.subheader('Demographics & Lifestyle')
-    col1, col2 = st.columns(2)
-    with col1:
-        numpad('age_value', 'Age')
-        try:
-            age = int(st.session_state.age_value) if st.session_state.age_value else 45
-        except ValueError:
-            age = 45
+    form_col1, form_col2 = st.columns(2)
+    with form_col1:
         gender = st.selectbox('Gender', ['Male', 'Female'])
-        numpad('bmi_value', 'BMI')
-        try:
-            bmi = float(st.session_state.bmi_value) if st.session_state.bmi_value else 25.0
-        except ValueError:
-            bmi = 25.0
         smoking = st.selectbox('Smoking', ['No', 'Yes'])
-    with col2:
         physical_activity = st.slider('Physical Activity (0-10)', 0.0, 10.0, 5.0)
         diet_quality = st.slider('Diet Quality (0-10)', 0.0, 10.0, 5.0)
+    with form_col2:
         sleep_quality = st.slider('Sleep Quality (4-10)', 4.0, 10.0, 7.0)
         alcohol = st.slider('Alcohol Consumption (0-20)', 0.0, 20.0, 5.0)
 
@@ -110,7 +118,6 @@ with st.form('risk_form'):
         excess_thirst = st.selectbox('Excessive Thirst', ['No', 'Yes'])
         weight_loss = st.selectbox('Unexplained Weight Loss', ['No', 'Yes'])
 
-    # Lab values shown only in Full Assessment mode
     if mode == 'Full Assessment (includes lab values)':
         st.subheader('Lab Values')
         col5, col6 = st.columns(2)
