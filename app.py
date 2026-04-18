@@ -17,7 +17,7 @@ accessible_features = joblib.load('accessible_features.pkl')
 # page layout
 st.set_page_config(page_title='Diabetes Risk Screening', layout='centered')
 st.title('Diabetes Risk Screening Tool')
-st.markdown('*Educational tool only - not a medical diagnosis.*')
+st.markdown('*Educational Tool Only - not a medical diagnosis.*')
 
 # user selection: full features or accessible features
 mode = st.radio('Assessment Type:', ['Self Assessment', 'Clinical Assessment'])
@@ -30,7 +30,7 @@ with st.form('risk_form'):
         age = st.number_input('Age', 20, 90, 45)
         gender = st.selectbox('Gender', ['Male', 'Female'])
         bmi = st.number_input('BMI', 15.0, 40.0, 25.0, 0.1)
-        smoking = st.selectbox('Smoking', ['No', 'Yes'])
+        smoking = st.selectbox('Regular Smoker?', ['No', 'Yes'])
     with col2:
         physical_activity = st.slider('Physical Activity (0-10)', 0.0, 10.0, 5.0)
         diet_quality = st.slider('Diet Quality (0-10)', 0.0, 10.0, 5.0)
@@ -40,13 +40,13 @@ with st.form('risk_form'):
     st.subheader('Medical History & Symptoms')
     col3, col4 = st.columns(2)
     with col3:
-        family_hx = st.selectbox('Family History of Diabetes', ['No', 'Yes'])
-        prev_pre = st.selectbox('Previous Pre-Diabetes', ['No', 'Yes'])
-        hypertension = st.selectbox('Hypertension', ['No', 'Yes'])
+        family_hx = st.selectbox('Family History of Diabetes?', ['No', 'Yes'])
+        prev_pre = st.selectbox('Previous Pre-Diabetes?', ['No', 'Yes'])
+        hypertension = st.selectbox('Hypertension?', ['No', 'Yes'])
     with col4:
-        freq_urine = st.selectbox('Frequent Urination', ['No', 'Yes'])
-        excess_thirst = st.selectbox('Excessive Thirst', ['No', 'Yes'])
-        weight_loss = st.selectbox('Unexplained Weight Loss', ['No', 'Yes'])
+        freq_urine = st.selectbox('Frequent Urination?', ['No', 'Yes'])
+        excess_thirst = st.selectbox('Excessive Thirst?', ['No', 'Yes'])
+        weight_loss = st.selectbox('Unexplained Weight Loss?', ['No', 'Yes'])
 
     # enabling full feature entry
     if mode == 'Clinical Assessment':
