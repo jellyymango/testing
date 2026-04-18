@@ -48,7 +48,7 @@ with st.form('risk_form'):
         excess_thirst = st.selectbox('Excessive Thirst', ['No', 'Yes'])
         weight_loss = st.selectbox('Unexplained Weight Loss', ['No', 'Yes'])
 
-    # Lab values shown only in Full Assessment mode
+    # enabling full feature entry
     if mode == 'Full Assessment (includes lab values)':
         st.subheader('Lab Values')
         col5, col6 = st.columns(2)
@@ -61,9 +61,9 @@ with st.form('risk_form'):
 
     submitted = st.form_submit_button('Assess My Risk')
 
-# Process submission
+# form submission
 if submitted:
-    # Build user input dictionary with accessible features
+    # store user input values
     user_data = {
         'Age': age,
         'Gender': 0 if gender == 'Male' else 1,
@@ -92,13 +92,14 @@ if submitted:
         'WaterQuality': 0,
     }
 
+    # if accessible, use logreg model
     if mode == 'Quick Screening (self-reported only)':
         input_df = pd.DataFrame([user_data])[accessible_features]
         input_scaled = scaler_accessible.transform(input_df)
         proba = log_reg_accessible.predict_proba(input_scaled)[0, 1]
-        confidence_note = 'Based on accessible features only (lower accuracy).'
+        confidence_note = 'Based on self-assessment only (lower accuracy).'
     else:
-        # Add clinical values and remaining features using population medians
+        # add all other features and fill with medians if necessary
         user_data.update({
             'SystolicBP': sys_bp,
             'DiastolicBP': dia_bp,
@@ -119,12 +120,13 @@ if submitted:
             'MedicationAdherence': 4.84,
             'HealthLiteracy': 5.04,
         })
+        # use xgboost model
         input_df = pd.DataFrame([user_data])[full_features]
         input_scaled = scaler_full.transform(input_df)
         proba = xgboost_full.predict_proba(input_scaled)[0, 1]
-        confidence_note = 'Based on full clinical assessment (high accuracy).'
+        confidence_note = 'Based on full clinical assessment (higher accuracy).'
 
-    # Display results
+    # display results
     st.markdown('---')
     st.subheader('Your Results')
 
