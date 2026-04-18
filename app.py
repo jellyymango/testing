@@ -2,108 +2,38 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load model artifacts
-xgboost_full = joblib.load('xgboost_full.pkl')
+# load models
+xgboost_full = joblib.load('xgboost_full.pkl')                                          
 log_reg_accessible = joblib.load('log_reg_accessible.pkl')
+
+# load scalers
 scaler_full = joblib.load('scaler_full.pkl')
 scaler_accessible = joblib.load('scaler_accessible.pkl')
+
+# load features
 full_features = joblib.load('full_features.pkl')
 accessible_features = joblib.load('accessible_features.pkl')
 
-# Page configuration
+# page layout
 st.set_page_config(page_title='Diabetes Risk Screening', layout='wide')
 st.title('Diabetes Risk Screening Tool')
 st.markdown('*Educational tool only - not a medical diagnosis.*')
 
-# Initialize session state for numpad values (MUST be before any numpad call)
-if 'age_value' not in st.session_state:
-    st.session_state.age_value = '45'
-if 'bmi_value' not in st.session_state:
-    st.session_state.bmi_value = '25.0'
+# user selection: full features or accessible features
+mode = st.radio('Assessment Type:', ['Quick Screening (self-reported only)', 'Full Assessment (includes lab values)'])
 
-# Assessment mode selection
-mode = st.radio(
-    'Assessment Type:',
-    ['Quick Screening (self-reported only)', 'Full Assessment (includes lab values)']
-)
-
-def append_digit(field, digit):
-    current = st.session_state[field]
-    if field == 'age_value' and current == '45':
-        st.session_state[field] = digit
-    elif field == 'bmi_value' and current == '25.0':
-        st.session_state[field] = digit
-    else:
-        st.session_state[field] = current + digit
-
-def clear_field(field):
-    st.session_state[field] = ''
-
-def backspace_field(field):
-    st.session_state[field] = st.session_state[field][:-1]
-
-def numpad(field_name, label):
-    st.markdown(f"**{label}**")
-    st.text(f"Current value: {st.session_state[field_name] or '(empty)'}")
-    
-    row1 = st.columns(3)
-    row2 = st.columns(3)
-    row3 = st.columns(3)
-    row4 = st.columns(3)
-    
-    digits_grid = [
-        (row1, ['1', '2', '3']),
-        (row2, ['4', '5', '6']),
-        (row3, ['7', '8', '9']),
-    ]
-    
-    for row, digits in digits_grid:
-        for col, digit in zip(row, digits):
-            col.button(digit, key=f'{field_name}_{digit}',
-                       on_click=append_digit, args=(field_name, digit),
-                       use_container_width=True)
-    
-    if field_name == 'bmi_value':
-        row4[0].button('.', key=f'{field_name}_dot',
-                       on_click=append_digit, args=(field_name, '.'),
-                       use_container_width=True)
-    else:
-        row4[0].button('C', key=f'{field_name}_clear',
-                       on_click=clear_field, args=(field_name,),
-                       use_container_width=True)
-    
-    row4[1].button('0', key=f'{field_name}_0',
-                   on_click=append_digit, args=(field_name, '0'),
-                   use_container_width=True)
-    row4[2].button('⌫', key=f'{field_name}_back',
-                   on_click=backspace_field, args=(field_name,),
-                   use_container_width=True)
-
-# Numpads OUTSIDE the form (buttons can't live inside st.form)
-st.subheader('Demographics & Lifestyle')
-numpad_col1, numpad_col2 = st.columns(2)
-with numpad_col1:
-    numpad('age_value', 'Age')
-    try:
-        age = int(st.session_state.age_value) if st.session_state.age_value else 45
-    except ValueError:
-        age = 45
-with numpad_col2:
-    numpad('bmi_value', 'BMI')
-    try:
-        bmi = float(st.session_state.bmi_value) if st.session_state.bmi_value else 25.0
-    except ValueError:
-        bmi = 25.0
-
-# Everything else stays INSIDE the form
+# user submission form
 with st.form('risk_form'):
-    form_col1, form_col2 = st.columns(2)
-    with form_col1:
+    st.subheader('Demographics & Lifestyle')
+    col1, col2 = st.columns(2)
+    with col1:
+        age = st.number_input('Age', 20, 90, 45)
         gender = st.selectbox('Gender', ['Male', 'Female'])
+        bmi = st.number_input('BMI', 15.0, 40.0, 25.0, 0.1)
         smoking = st.selectbox('Smoking', ['No', 'Yes'])
+    with col2:
         physical_activity = st.slider('Physical Activity (0-10)', 0.0, 10.0, 5.0)
         diet_quality = st.slider('Diet Quality (0-10)', 0.0, 10.0, 5.0)
-    with form_col2:
         sleep_quality = st.slider('Sleep Quality (4-10)', 4.0, 10.0, 7.0)
         alcohol = st.slider('Alcohol Consumption (0-20)', 0.0, 20.0, 5.0)
 
@@ -118,6 +48,7 @@ with st.form('risk_form'):
         excess_thirst = st.selectbox('Excessive Thirst', ['No', 'Yes'])
         weight_loss = st.selectbox('Unexplained Weight Loss', ['No', 'Yes'])
 
+    # Lab values shown only in Full Assessment mode
     if mode == 'Full Assessment (includes lab values)':
         st.subheader('Lab Values')
         col5, col6 = st.columns(2)
@@ -197,17 +128,12 @@ if submitted:
     st.markdown('---')
     st.subheader('Your Results')
 
-    if proba < 0.3:
-        st.success(f'**Low Risk** - {proba * 100:.1f}%')
-    elif proba < 0.6:
-        st.warning(f'**Moderate Risk** - {proba * 100:.1f}%')
+    if proba < 0.33:
+        st.success(f'**Low Risk** - {proba * 100:.2f}%')
+    elif proba < 0.66:
+        st.warning(f'**Moderate Risk** - {proba * 100:.2f}%')
     else:
-        st.error(f'**High Risk** - {proba * 100:.1f}%')
+        st.error(f'**High Risk** - {proba * 100:.2f}%')
 
     st.progress(float(proba))
     st.caption(confidence_note)
-
-    st.info(
-        'This tool is for educational purposes only and does not constitute a medical '
-        'diagnosis. If you have concerns about your risk, consult a healthcare provider.'
-    )
